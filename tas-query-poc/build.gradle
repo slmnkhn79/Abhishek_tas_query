@@ -27,7 +27,7 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     
     // Spring AI with Ollama for embedded SQL generation models
-    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter:1.0.0-M6'
     
     // Utilities
     implementation 'org.springframework.boot:spring-boot-starter-validation'
