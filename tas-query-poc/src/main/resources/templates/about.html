@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - TAS Query Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .nav {
+            margin-top: 1rem;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 1rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .nav a:hover {
+            opacity: 1;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        p {
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tech-badge {
+            background: #ecf0f1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            color: #2c3e50;
+        }
+        
+        .query-examples {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .query-examples h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .query-examples ul {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .query-examples li {
+            padding: 0.25rem 0;
+            color: #555;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TAS Query Assistant</h1>
+        <nav class="nav">
+            <a href="/">← Back to Chat</a>
+        </nav>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>About TAS Query Assistant</h2>
+            <p>
+                The TAS Query Assistant is an intelligent natural language interface for querying your 
+                Time and Attendance System database. It combines the power of AI-driven SQL generation 
+                with predictive analytics to provide insights into your workforce data.
+            </p>
+            
+            <h3>Key Features</h3>
+            <ul class="feature-list">
+                <li>Natural language to SQL conversion</li>
+                <li>AI-powered query understanding with SQLCoder model</li>
+                <li>Predictive analytics and trend analysis</li>
+                <li>Interactive data visualizations</li>
+                <li>Conversation context awareness</li>
+                <li>Smart recommendations based on data patterns</li>
+                <li>Fallback pattern matching for reliability</li>
+            </ul>
+            
+            <h3>Technology Stack</h3>
+            <div class="tech-stack">
+                <span class="tech-badge">Spring Boot 3.x</span>
+                <span class="tech-badge">Spring AI 1.0.0</span>
+                <span class="tech-badge">PostgreSQL</span>
+                <span class="tech-badge">Ollama</span>
+                <span class="tech-badge">SQLCoder 7B</span>
+                <span class="tech-badge">Thymeleaf</span>
+                <span class="tech-badge">Chart.js</span>
+                <span class="tech-badge">Gradle</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>How It Works</h2>
+            
+            <h3>1. Natural Language Processing</h3>
+            <p>
+                When you type a question, the system uses the SQLCoder AI model to understand your intent 
+                and generate appropriate SQL queries. If AI is unavailable, it falls back to pattern matching.
+            </p>
+            
+            <h3>2. Query Execution</h3>
+            <p>
+                The generated SQL is validated for security and executed against the PostgreSQL database 
+                containing your TAS data.
+            </p>
+            
+            <h3>3. Insight Generation</h3>
+            <p>
+                Results are analyzed to extract key findings, trends, and anomalies. The system uses 
+                statistical analysis to identify patterns and generate recommendations.
+            </p>
+            
+            <h3>4. Predictive Analytics</h3>
+            <p>
+                Advanced algorithms analyze historical data to predict future trends, identify risks, 
+                and suggest proactive measures.
+            </p>
+            
+            <h3>5. Visualization</h3>
+            <p>
+                Data is automatically formatted for visual representation using Chart.js, with the 
+                appropriate chart type selected based on the data characteristics.
+            </p>
+        </div>
+        
+        <div class="card">
+            <h2>Example Queries</h2>
+            
+            <div class="query-examples">
+                <h4>Basic Queries</h4>
+                <ul>
+                    <li>• Show all active tenants</li>
+                    <li>• List colleagues by location</li>
+                    <li>• Display tenant overview</li>
+                </ul>
+            </div>
+            
+            <div class="query-examples">
+                <h4>Analytics Queries</h4>
+                <ul>
+                    <li>• Show daily exception trends</li>
+                    <li>• Analyze shift patterns</li>
+                    <li>• Exception status distribution</li>
+                </ul>
+            </div>
+            
+            <div class="query-examples">
+                <h4>Complex Queries</h4>
+                <ul>
+                    <li>• Top 5 colleagues generating exceptions</li>
+                    <li>• Show me colleagues with attendance issues and their shift details</li>
+                    <li>• Which locations have the most overtime exceptions?</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Database Schema</h2>
+            <p>
+                The system queries the <code>tas_demo</code> schema with the following main tables:
+            </p>
+            <ul class="feature-list">
+                <li><strong>tenant</strong> - Organization/company information</li>
+                <li><strong>location</strong> - Physical locations within tenants</li>
+                <li><strong>colleague_details</strong> - Employee information</li>
+                <li><strong>planned_shift</strong> - Scheduled work shifts</li>
+                <li><strong>exception</strong> - Attendance exceptions (late, early, absence)</li>
+                <li><strong>exception_detail</strong> - Detailed exception information</li>
+                <li><strong>exception_audit</strong> - Exception resolution history</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>Privacy & Security</h2>
+            <p>
+                All queries are validated for SQL injection prevention. The system only allows SELECT 
+                queries and enforces schema restrictions. No data modifications are permitted through 
+                the chat interface.
+            </p>
+            <p>
+                AI processing is done locally using Ollama, ensuring your data never leaves your 
+                infrastructure.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

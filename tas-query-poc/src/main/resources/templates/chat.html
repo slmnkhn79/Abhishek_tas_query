@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAS Query Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        
+        .sidebar h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .suggestions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .suggestion {
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .suggestion:hover {
+            background: #e9ecef;
+            border-color: #dee2e6;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .chat-container {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .message {
+            display: flex;
+            gap: 0.75rem;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .message.user .message-avatar {
+            background: #3498db;
+            color: white;
+        }
+        
+        .message.bot .message-avatar {
+            background: #2c3e50;
+            color: white;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .message.user .message-content {
+            background: #3498db;
+            color: white;
+        }
+        
+        .message.bot .message-content {
+            background: #f8f9fa;
+            color: #2c3e50;
+            border: 1px solid #e9ecef;
+        }
+        
+        .message-content pre {
+            background: rgba(0,0,0,0.05);
+            padding: 0.5rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+        
+        .insights-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .insights-section h4 {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        
+        .finding {
+            padding: 0.25rem 0;
+            font-size: 0.875rem;
+        }
+        
+        .chart-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+        
+        .input-container {
+            padding: 1rem;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .input-form {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .input-field {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus {
+            border-color: #3498db;
+        }
+        
+        .send-button {
+            padding: 0.75rem 1.5rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .send-button:hover {
+            background: #2980b9;
+        }
+        
+        .send-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+        
+        .recommendations {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .recommendation {
+            padding: 0.25rem 0.75rem;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .recommendation:hover {
+            background: #bbdefb;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                order: 2;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>TAS Query Assistant</h1>
+        <p>Natural Language Database Query Interface</p>
+    </div>
+    
+    <div class="container">
+        <aside class="sidebar">
+            <h3>Quick Queries</h3>
+            <div class="suggestions" id="suggestions">
+                <!-- Suggestions will be loaded here -->
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="chat-container">
+                <div class="messages" id="messages">
+                    <div class="message bot">
+                        <div class="message-avatar">TAS</div>
+                        <div class="message-content">
+                            <p>👋 Hello! I'm your TAS Query Assistant. I can help you explore your Time and Attendance System data using natural language.</p>
+                            <p>Try asking me questions like:</p>
+                            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>Show me all active tenants</li>
+                                <li>Which colleagues have the most exceptions?</li>
+                                <li>Show daily exception trends</li>
+                                <li>Top 5 colleagues generating exceptions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <form class="input-form" id="chatForm">
+                        <input type="text" 
+                               class="input-field" 
+                               id="messageInput" 
+                               placeholder="Ask me anything about your TAS data..." 
+                               autocomplete="off">
+                        <button type="submit" class="send-button" id="sendButton">Send</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        let sessionId = generateSessionId();
+        let isLoading = false;
+        
+        function generateSessionId() {
+            return 'session-' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Load suggestions
+        async function loadSuggestions() {
+            try {
+                const response = await fetch('/api/chat/suggestions');
+                const suggestions = await response.json();
+                
+                const container = document.getElementById('suggestions');
+                container.innerHTML = suggestions.map(s => 
+                    `<div class="suggestion" onclick="sendSuggestion('${s}')">${s}</div>`
+                ).join('');
+            } catch (error) {
+                console.error('Failed to load suggestions:', error);
+            }
+        }
+        
+        // Send suggestion
+        function sendSuggestion(text) {
+            document.getElementById('messageInput').value = text;
+            document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+        }
+        
+        // Add message to chat
+        function addMessage(type, content, data) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const avatar = type === 'user' ? 'You' : 'TAS';
+            
+            let messageContent = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+            `;
+            
+            if (type === 'user') {
+                messageContent += `<p>${content}</p>`;
+            } else {
+                // Bot message with rich content
+                messageContent += `<p>${content}</p>`;
+                
+                // Add insights if available
+                if (data && data.insights) {
+                    const insights = data.insights;
+                    
+                    if (insights.keyFindings && insights.keyFindings.length > 0) {
+                        messageContent += `
+                            <div class="insights-section">
+                                <h4>📊 Key Findings:</h4>
+                                ${insights.keyFindings.map(f => `<div class="finding">• ${f}</div>`).join('')}
+                            </div>
+                        `;
+                    }
+                    
+                    if (insights.recommendations && insights.recommendations.length > 0) {
+                        messageContent += `
+                            <div class="insights-section">
+                                <h4>💡 Recommendations:</h4>
+                                ${insights.recommendations.map(r => `<div class="finding">• ${r}</div>`).join('')}
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Add chart if available
+                if (data && data.chartData && data.chartData.labels) {
+                    const chartId = 'chart-' + Date.now();
+                    messageContent += `
+                        <div class="chart-container">
+                            <canvas id="${chartId}" width="400" height="200"></canvas>
+                        </div>
+                    `;
+                    
+                    // Render chart after DOM update
+                    setTimeout(() => renderChart(chartId, data.chartData), 100);
+                }
+                
+                // Add follow-up suggestions
+                if (data && data.followUpSuggestions && data.followUpSuggestions.length > 0) {
+                    messageContent += `
+                        <div class="recommendations">
+                            ${data.followUpSuggestions.map(s => 
+                                `<span class="recommendation" onclick="sendSuggestion('${s}')">${s}</span>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+            }
+            
+            messageContent += '</div>';
+            messageDiv.innerHTML = messageContent;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Render chart
+        function renderChart(canvasId, chartData) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: chartData.chartType || 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: chartData.datasets.map(ds => ({
+                        ...ds,
+                        borderWidth: 1,
+                        backgroundColor: ds.backgroundColor || 'rgba(52, 152, 219, 0.8)',
+                        borderColor: ds.borderColor || 'rgba(52, 152, 219, 1)'
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: !!chartData.title,
+                            text: chartData.title
+                        },
+                        legend: {
+                            display: chartData.datasets.length > 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Handle form submission
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (isLoading) return;
+            
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            
+            // Show loading
+            isLoading = true;
+            document.getElementById('sendButton').disabled = true;
+            
+            // Add loading message
+            const loadingId = 'loading-' + Date.now();
+            const messagesDiv = document.getElementById('messages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = loadingId;
+            loadingDiv.className = 'message bot';
+            loadingDiv.innerHTML = `
+                <div class="message-avatar">TAS</div>
+                <div class="message-content">
+                    <div class="loading"></div> Analyzing your query...
+                </div>
+            `;
+            messagesDiv.appendChild(loadingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            try {
+                const response = await fetch('/api/chat/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        message: message
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+                
+                const data = await response.json();
+                
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+                
+                // Add bot response
+                addMessage('bot', data.message, data);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Remove loading message
+                const loading = document.getElementById(loadingId);
+                if (loading) loading.remove();
+                
+                // Add error message
+                addMessage('bot', 'Sorry, I encountered an error processing your request. Please try again.');
+            } finally {
+                isLoading = false;
+                document.getElementById('sendButton').disabled = false;
+            }
+        });
+        
+        // Load suggestions on page load
+        loadSuggestions();
+        
+        // Focus input on load
+        document.getElementById('messageInput').focus();
+    </script>
+</body>
+</html>

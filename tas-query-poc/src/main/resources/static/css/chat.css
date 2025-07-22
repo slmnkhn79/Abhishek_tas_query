@@ -1,0 +1,254 @@
+/* Enhanced styles for better user experience */
+
+/* Scrollbar styling */
+.messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 4px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+    }
+    
+    .header {
+        background-color: #1e2936;
+    }
+    
+    .sidebar, .chat-container {
+        background: #2a2a2a;
+    }
+    
+    .suggestion {
+        background: #333;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+    
+    .suggestion:hover {
+        background: #444;
+        border-color: #555;
+    }
+    
+    .message.bot .message-content {
+        background: #333;
+        color: #e0e0e0;
+        border-color: #444;
+    }
+    
+    .input-field {
+        background: #333;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+    
+    .input-field:focus {
+        border-color: #3498db;
+    }
+    
+    .messages::-webkit-scrollbar-track {
+        background: #333;
+    }
+    
+    .messages::-webkit-scrollbar-thumb {
+        background: #555;
+    }
+    
+    .messages::-webkit-scrollbar-thumb:hover {
+        background: #666;
+    }
+}
+
+/* Accessibility improvements */
+.message-content:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.suggestion:focus,
+.recommendation:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .input-container,
+    .header nav {
+        display: none;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    .message-content {
+        max-width: 100%;
+    }
+}
+
+/* Loading animation improvements */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 0.5rem 0;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #3498db;
+    border-radius: 50%;
+    animation: typing 1.4s ease-in-out infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* Enhanced mobile experience */
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 1.25rem;
+    }
+    
+    .header p {
+        font-size: 0.8rem;
+    }
+    
+    .message-content {
+        max-width: 90%;
+        font-size: 0.875rem;
+    }
+    
+    .input-field {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    .chart-container {
+        padding: 0.5rem;
+    }
+}
+
+/* Smooth transitions */
+.message-content,
+.suggestion,
+.recommendation,
+.input-field,
+.send-button {
+    transition: all 0.2s ease;
+}
+
+/* Better focus indicators */
+*:focus-visible {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Code block styling */
+.message-content code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875em;
+}
+
+.message-content pre code {
+    display: block;
+    padding: 0.75rem;
+    overflow-x: auto;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Table styling for query results */
+.query-results {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+.query-results table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.query-results th,
+.query-results td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.query-results th {
+    background: #f8f9fa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.query-results tr:hover {
+    background: #f8f9fa;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.25rem;
+}
+
+.status-indicator.online {
+    background: #27ae60;
+}
+
+.status-indicator.offline {
+    background: #e74c3c;
+}
+
+.status-indicator.processing {
+    background: #f39c12;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
