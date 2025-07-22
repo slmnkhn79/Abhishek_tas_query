@@ -73,6 +73,22 @@ public class QueryService {
             result.setRowCount(results != null ? results.size() : 0);
             result.setSuccess(true);
             
+            // Also populate columns and rows for compatibility
+            if (results != null && !results.isEmpty()) {
+                List<String> columnList = new ArrayList<>(results.get(0).keySet());
+                result.setColumns(columnList);
+                
+                List<List<Object>> rowsList = new ArrayList<>();
+                for (Map<String, Object> row : results) {
+                    List<Object> rowData = new ArrayList<>();
+                    for (String col : columnList) {
+                        rowData.add(row.get(col));
+                    }
+                    rowsList.add(rowData);
+                }
+                result.setRows(rowsList);
+            }
+            
             log.info("Query executed successfully, returned {} rows", result.getRowCount());
             
         } catch (Exception e) {

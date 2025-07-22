@@ -338,7 +338,7 @@ public class SqlGenerationService {
             Prompt aiPrompt = new Prompt(messages);
             ChatResponse response = chatModel.call(aiPrompt);
             
-            String generatedSql = response.getResult().getOutput().getContent();
+            String generatedSql = response.getResults().get(0).getOutput().getText();
             
             // Clean up the response (remove markdown if present)
             generatedSql = cleanSqlResponse(generatedSql);
