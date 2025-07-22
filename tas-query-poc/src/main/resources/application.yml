@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: tas-query-poc
+    
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+      schema: tas_demo
+      
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: tas_demo
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    
+  # AI configuration will be added in Phase 3
+  # ai:
+  #   ollama:
+  #     base-url: http://localhost:11434
+  #     chat:
+  #       options:
+  #         model: llama2
+  #         temperature: 0.1
+          
+  thymeleaf:
+    cache: false
+    
+server:
+  port: 8080
+  
+logging:
+  level:
+    com.tas.poc: DEBUG
+    
+# Application specific properties
+tas:
+  conversation:
+    history-size: 5
+    session-timeout-minutes: 30
