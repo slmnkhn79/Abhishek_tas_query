@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -13,10 +14,10 @@ import java.util.List;
 @AllArgsConstructor
 public class Insights {
     private String summary;
-    private List<Finding> keyFindings;
-    private List<String> followUpSuggestions;
-    private DataHighlights highlights;
-    private String explanation;
+    private List<String> keyFindings;
+    private List<String> recommendations;
+    private Map<String, Object> trends;
+    private Map<String, Object> additionalData;
     
     @Data
     @Builder

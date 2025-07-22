@@ -38,3 +38,49 @@ bin/
 # Local configuration
 application-local.yml
 application-*.properties
+!application.properties
+
+# Security - Never commit secrets
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Test reports
+test-results/
+reports/
+
+# Database
+*.db
+*.sqlite
+*.h2.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache
+.cache/
+*.cache
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Performance test results
+performance/
+jmeter.log
+
+# Profiling data
+*.hprof
+*.jfr

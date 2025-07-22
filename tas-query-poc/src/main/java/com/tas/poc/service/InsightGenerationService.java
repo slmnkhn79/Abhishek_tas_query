@@ -1,11 +1,11 @@
 package com.tas.poc.service;
 
-import com.tas.poc.model.*;
+import com.tas.poc.model.Insights;
+import com.tas.poc.model.QueryResult;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,8 +17,9 @@ import java.util.stream.Collectors;
  * - Key findings and trends
  * - Statistical analysis (averages, totals, distributions)
  * - Anomaly detection and warnings
- * - Context-aware follow-up suggestions
+ * - Context-aware recommendations
  * - Business intelligence insights
+ * - Predictive analytics integration
  * 
  * The service uses the Strategy pattern to provide specialized insight generation
  * for different types of queries:
@@ -36,405 +37,542 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class InsightGenerationService {
     
+    private final PredictiveAnalyticsService predictiveAnalyticsService;
+    
     /**
-     * Map of query patterns to their specialized insight generation strategies.
-     * Each strategy understands the specific context and meaning of its query type
-     * and generates appropriate insights, findings, and recommendations.
+     * Generates comprehensive insights from query results.
+     * Includes basic analysis enhanced with predictive analytics.
+     * 
+     * @param query The natural language query
+     * @param result The query execution results
+     * @return Insights object with findings and recommendations
      */
-    private static final Map<String, InsightStrategy> INSIGHT_STRATEGIES = new HashMap<>();
-    
-    static {
-        INSIGHT_STRATEGIES.put("colleagues by location", new ColleagueLocationInsightStrategy());
-        INSIGHT_STRATEGIES.put("exceptions by type", new ExceptionTypeInsightStrategy());
-        INSIGHT_STRATEGIES.put("daily exceptions", new DailyExceptionInsightStrategy());
-        INSIGHT_STRATEGIES.put("tenant overview", new TenantOverviewInsightStrategy());
-        INSIGHT_STRATEGIES.put("shift patterns", new ShiftPatternInsightStrategy());
-        INSIGHT_STRATEGIES.put("exception status distribution", new ExceptionStatusInsightStrategy());
-    }
-    
-    public Insights generateInsights(String query, QueryResult result, ChartData chartData) {
-        if (!result.isSuccess() || result.getResults().isEmpty()) {
+    public Insights generateInsights(String query, QueryResult result) {
+        log.debug("Generating insights for query: {}", query);
+        
+        if (result.getRows().isEmpty()) {
             return Insights.builder()
                     .summary("No data found for your query.")
-                    .keyFindings(List.of())
-                    .followUpSuggestions(getDefaultFollowUpSuggestions())
+                    .keyFindings(List.of("No results returned from the database"))
                     .build();
         }
         
-        String queryPattern = findQueryPattern(query.toLowerCase());
-        InsightStrategy strategy = INSIGHT_STRATEGIES.get(queryPattern);
+        // Analyze query type and generate appropriate insights
+        String lowerQuery = query.toLowerCase();
+        InsightStrategy strategy = determineStrategy(lowerQuery);
         
-        if (strategy != null) {
-            return strategy.generateInsights(result, chartData);
+        Insights basicInsights = strategy.generateInsights(query, result);
+        
+        // Enhance with predictive analytics
+        Map<String, Object> predictions = predictiveAnalyticsService.generatePredictiveInsights(query, result);
+        
+        return enhanceWithPredictions(basicInsights, predictions);
+    }
+    
+    /**
+     * Determines the appropriate insight generation strategy based on query type.
+     * 
+     * @param query The lowercase query string
+     * @return Appropriate InsightStrategy implementation
+     */
+    private InsightStrategy determineStrategy(String query) {
+        if (query.contains("exception")) {
+            return new ExceptionInsightStrategy();
+        } else if (query.contains("colleague") || query.contains("employee")) {
+            return new ColleagueInsightStrategy();
+        } else if (query.contains("tenant")) {
+            return new TenantInsightStrategy();
+        } else if (query.contains("shift") || query.contains("schedule")) {
+            return new ShiftInsightStrategy();
+        } else if (query.contains("location")) {
+            return new LocationInsightStrategy();
+        } else {
+            return new GenericInsightStrategy();
         }
-        
-        return generateGenericInsights(result);
     }
     
-    private String findQueryPattern(String query) {
-        for (String pattern : INSIGHT_STRATEGIES.keySet()) {
-            if (query.contains(pattern)) {
-                return pattern;
-            }
-        }
-        return null;
-    }
-    
-    private Insights generateGenericInsights(QueryResult result) {
-        List<Finding> findings = new ArrayList<>();
-        int rowCount = result.getRowCount();
-        
-        findings.add(Finding.builder()
-                .type("HIGHLIGHT")
-                .message(String.format("Found %d records", rowCount))
-                .significance(0.5)
-                .build());
-        
-        return Insights.builder()
-                .summary(String.format("Your query returned %d results.", rowCount))
-                .keyFindings(findings)
-                .followUpSuggestions(getDefaultFollowUpSuggestions())
-                .explanation("The data has been retrieved successfully.")
-                .build();
-    }
-    
-    private List<String> getDefaultFollowUpSuggestions() {
-        return List.of(
-            "Show tenant overview",
-            "Show exceptions by type",
-            "Show colleagues by location"
-        );
-    }
-    
-    // Base interface for insight strategies
+    /**
+     * Base interface for insight generation strategies.
+     */
     private interface InsightStrategy {
-        Insights generateInsights(QueryResult result, ChartData chartData);
+        Insights generateInsights(String query, QueryResult result);
     }
     
-    // Colleague Location Insights
-    private static class ColleagueLocationInsightStrategy implements InsightStrategy {
+    /**
+     * Generic insight strategy for unspecified query types.
+     */
+    private class GenericInsightStrategy implements InsightStrategy {
         @Override
-        public Insights generateInsights(QueryResult result, ChartData chartData) {
-            List<Map<String, Object>> data = result.getResults();
-            List<Finding> findings = new ArrayList<>();
+        public Insights generateInsights(String query, QueryResult result) {
+            List<String> findings = new ArrayList<>();
+            Map<String, Object> trends = new HashMap<>();
             
-            // Find location with most colleagues
-            Map<String, Object> maxLocation = data.stream()
-                    .max(Comparator.comparing(row -> ((Number) row.get("colleague_count")).longValue()))
-                    .orElse(null);
+            findings.add(String.format("Retrieved %d records", result.getRows().size()));
             
-            if (maxLocation != null) {
-                findings.add(Finding.builder()
-                        .type("HIGHLIGHT")
-                        .message(String.format("%s has the most colleagues", maxLocation.get("location_name")))
-                        .value(String.valueOf(maxLocation.get("colleague_count")))
-                        .significance(0.9)
-                        .build());
-            }
-            
-            // Calculate total colleagues
-            long totalColleagues = data.stream()
-                    .mapToLong(row -> ((Number) row.get("colleague_count")).longValue())
-                    .sum();
-            
-            // Find understaffed locations
-            long understaffedCount = data.stream()
-                    .filter(row -> ((Number) row.get("colleague_count")).longValue() < 3)
-                    .count();
-            
-            if (understaffedCount > 0) {
-                findings.add(Finding.builder()
-                        .type("WARNING")
-                        .message(String.format("%d locations have fewer than 3 colleagues", understaffedCount))
-                        .significance(0.7)
-                        .build());
-            }
-            
-            String summary = String.format("Found %d colleagues distributed across %d locations.", 
-                    totalColleagues, data.size());
-            
-            return Insights.builder()
-                    .summary(summary)
-                    .keyFindings(findings)
-                    .followUpSuggestions(List.of(
-                        "Show colleague activity",
-                        "Show exceptions by location",
-                        "Show shift coverage by location"
-                    ))
-                    .highlights(Insights.DataHighlights.builder()
-                            .total(totalColleagues)
-                            .topValue(maxLocation != null ? (String) maxLocation.get("location_name") : null)
-                            .build())
-                    .build();
-        }
-    }
-    
-    // Exception Type Insights
-    private static class ExceptionTypeInsightStrategy implements InsightStrategy {
-        @Override
-        public Insights generateInsights(QueryResult result, ChartData chartData) {
-            List<Map<String, Object>> data = result.getResults();
-            List<Finding> findings = new ArrayList<>();
-            
-            // Most common exception type
-            Map<String, Object> mostCommon = data.stream()
-                    .max(Comparator.comparing(row -> ((Number) row.get("exception_count")).longValue()))
-                    .orElse(null);
-            
-            if (mostCommon != null) {
-                findings.add(Finding.builder()
-                        .type("TREND")
-                        .message(String.format("%s is the most common exception type", mostCommon.get("exception_type")))
-                        .value(String.valueOf(mostCommon.get("exception_count")))
-                        .significance(0.8)
-                        .build());
-                
-                // Average duration for most common type
-                Number avgDuration = (Number) mostCommon.get("avg_duration_mins");
-                if (avgDuration != null) {
-                    findings.add(Finding.builder()
-                            .type("HIGHLIGHT")
-                            .message(String.format("Average duration: %.1f minutes", avgDuration.doubleValue()))
-                            .significance(0.6)
-                            .build());
+            // Analyze numeric columns
+            List<String> numericColumns = findNumericColumns(result);
+            for (String column : numericColumns) {
+                List<Double> values = extractNumericValues(result, column);
+                if (!values.isEmpty()) {
+                    double avg = calculateAverage(values);
+                    findings.add(String.format("Average %s: %.2f", column, avg));
+                    trends.put(column + "_average", avg);
                 }
             }
             
-            // Total exceptions
-            long totalExceptions = data.stream()
-                    .mapToLong(row -> ((Number) row.get("exception_count")).longValue())
-                    .sum();
-            
-            String summary = String.format("Analyzed %d total exceptions across %d different types.", 
-                    totalExceptions, data.size());
-            
             return Insights.builder()
-                    .summary(summary)
+                    .summary(String.format("Query returned %d results with %d columns.", 
+                            result.getRows().size(), result.getColumns().size()))
                     .keyFindings(findings)
-                    .followUpSuggestions(List.of(
-                        "Show daily exceptions",
-                        "Show exception status distribution",
-                        "Show exceptions for specific colleague"
+                    .recommendations(List.of(
+                            "Try more specific queries for better insights",
+                            "Use filters to narrow down results"
                     ))
+                    .trends(trends)
                     .build();
         }
     }
     
-    // Daily Exception Insights
-    private static class DailyExceptionInsightStrategy implements InsightStrategy {
+    /**
+     * Exception-specific insight strategy.
+     */
+    private class ExceptionInsightStrategy implements InsightStrategy {
         @Override
-        public Insights generateInsights(QueryResult result, ChartData chartData) {
-            List<Map<String, Object>> data = result.getResults();
-            List<Finding> findings = new ArrayList<>();
+        public Insights generateInsights(String query, QueryResult result) {
+            List<String> findings = new ArrayList<>();
+            List<String> recommendations = new ArrayList<>();
+            Map<String, Object> trends = new HashMap<>();
             
-            // Calculate resolution rate
-            long totalExceptions = data.stream()
-                    .mapToLong(row -> ((Number) row.get("total_exceptions")).longValue())
-                    .sum();
+            // Find exception counts and types
+            Map<String, Integer> exceptionTypes = new HashMap<>();
+            int totalExceptions = 0;
             
-            long totalResolved = data.stream()
-                    .mapToLong(row -> ((Number) row.get("resolved_count")).longValue())
-                    .sum();
-            
-            double resolutionRate = totalExceptions > 0 ? 
-                    (totalResolved * 100.0 / totalExceptions) : 0;
-            
-            findings.add(Finding.builder()
-                    .type("HIGHLIGHT")
-                    .message(String.format("Overall resolution rate: %.1f%%", resolutionRate))
-                    .significance(0.8)
-                    .build());
-            
-            // Find peak day
-            Map<String, Object> peakDay = data.stream()
-                    .max(Comparator.comparing(row -> ((Number) row.get("total_exceptions")).longValue()))
-                    .orElse(null);
-            
-            if (peakDay != null) {
-                findings.add(Finding.builder()
-                        .type("ANOMALY")
-                        .message(String.format("Peak exception day: %s", peakDay.get("exception_date")))
-                        .value(String.valueOf(peakDay.get("total_exceptions")))
-                        .significance(0.7)
-                        .build());
+            for (List<Object> row : result.getRows()) {
+                for (int i = 0; i < result.getColumns().size(); i++) {
+                    String column = result.getColumns().get(i).toLowerCase();
+                    if (column.contains("exception_type") && row.get(i) != null) {
+                        String type = row.get(i).toString();
+                        exceptionTypes.merge(type, 1, Integer::sum);
+                    } else if (column.contains("count") && row.get(i) instanceof Number) {
+                        totalExceptions += ((Number) row.get(i)).intValue();
+                    }
+                }
             }
             
-            // Trend analysis
-            if (data.size() > 7) {
-                List<Long> recentCounts = data.stream()
-                        .limit(7)
-                        .map(row -> ((Number) row.get("total_exceptions")).longValue())
-                        .collect(Collectors.toList());
+            if (!exceptionTypes.isEmpty()) {
+                String mostCommon = exceptionTypes.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse("Unknown");
+                findings.add(String.format("Most common exception type: %s", mostCommon));
+                trends.put("dominant_exception_type", mostCommon);
+            }
+            
+            if (totalExceptions > 0) {
+                findings.add(String.format("Total exceptions found: %d", totalExceptions));
+                trends.put("total_exceptions", totalExceptions);
                 
-                double avgRecent = recentCounts.stream().mapToLong(Long::longValue).average().orElse(0);
-                double avgOverall = data.stream()
-                        .mapToLong(row -> ((Number) row.get("total_exceptions")).longValue())
-                        .average().orElse(0);
+                if (totalExceptions > 100) {
+                    recommendations.add("High exception count detected. Review processes and training.");
+                }
+            }
+            
+            // Analyze resolution status if available
+            long resolvedCount = 0;
+            long openCount = 0;
+            
+            for (List<Object> row : result.getRows()) {
+                for (int i = 0; i < result.getColumns().size(); i++) {
+                    if (result.getColumns().get(i).toLowerCase().contains("status")) {
+                        String status = row.get(i) != null ? row.get(i).toString().toUpperCase() : "";
+                        if (status.contains("RESOLVED")) resolvedCount++;
+                        else if (status.contains("OPEN")) openCount++;
+                    }
+                }
+            }
+            
+            if (resolvedCount > 0 || openCount > 0) {
+                double resolutionRate = (resolvedCount * 100.0) / (resolvedCount + openCount);
+                findings.add(String.format("Resolution rate: %.1f%%", resolutionRate));
+                trends.put("resolution_rate", resolutionRate);
                 
-                String trend = avgRecent > avgOverall * 1.1 ? "increasing" : 
-                              avgRecent < avgOverall * 0.9 ? "decreasing" : "stable";
+                if (resolutionRate < 80) {
+                    recommendations.add("Resolution rate below 80%. Focus on clearing open exceptions.");
+                }
+            }
+            
+            recommendations.add("Monitor exception trends regularly");
+            recommendations.add("Implement preventive measures for common exceptions");
+            
+            return Insights.builder()
+                    .summary(String.format("Exception analysis: %d records analyzed", result.getRows().size()))
+                    .keyFindings(findings)
+                    .recommendations(recommendations)
+                    .trends(trends)
+                    .build();
+        }
+    }
+    
+    /**
+     * Colleague-specific insight strategy.
+     */
+    private class ColleagueInsightStrategy implements InsightStrategy {
+        @Override
+        public Insights generateInsights(String query, QueryResult result) {
+            List<String> findings = new ArrayList<>();
+            List<String> recommendations = new ArrayList<>();
+            Map<String, Object> trends = new HashMap<>();
+            
+            // Count total colleagues
+            Set<String> uniqueColleagues = new HashSet<>();
+            Map<String, Integer> locationDistribution = new HashMap<>();
+            
+            for (List<Object> row : result.getRows()) {
+                for (int i = 0; i < result.getColumns().size(); i++) {
+                    String column = result.getColumns().get(i).toLowerCase();
+                    
+                    if (column.contains("colleague") && column.contains("uuid") && row.get(i) != null) {
+                        uniqueColleagues.add(row.get(i).toString());
+                    } else if (column.contains("location") && !column.contains("uuid") && row.get(i) != null) {
+                        String location = row.get(i).toString();
+                        locationDistribution.merge(location, 1, Integer::sum);
+                    }
+                }
+            }
+            
+            if (!uniqueColleagues.isEmpty()) {
+                findings.add(String.format("Total unique colleagues: %d", uniqueColleagues.size()));
+                trends.put("total_colleagues", uniqueColleagues.size());
+            }
+            
+            if (!locationDistribution.isEmpty()) {
+                String topLocation = locationDistribution.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse("Unknown");
+                findings.add(String.format("Location with most colleagues: %s", topLocation));
+                trends.put("top_location", topLocation);
                 
-                findings.add(Finding.builder()
-                        .type("TREND")
-                        .message(String.format("Exception trend is %s", trend))
-                        .significance(0.6)
-                        .build());
+                // Check for understaffed locations
+                long understaffed = locationDistribution.values().stream()
+                        .filter(count -> count < 5)
+                        .count();
+                if (understaffed > 0) {
+                    findings.add(String.format("%d locations may be understaffed", understaffed));
+                    recommendations.add("Review staffing levels in smaller locations");
+                }
             }
             
-            String summary = String.format("Analyzed exception trends over %d days with %d total exceptions.", 
-                    data.size(), totalExceptions);
+            recommendations.add("Ensure balanced colleague distribution across locations");
+            recommendations.add("Monitor colleague activity and engagement");
             
             return Insights.builder()
-                    .summary(summary)
+                    .summary(String.format("Colleague analysis across %d records", result.getRows().size()))
                     .keyFindings(findings)
-                    .followUpSuggestions(List.of(
-                        "Show exceptions by type",
-                        "Show unresolved exceptions",
-                        "Show exception details for peak day"
-                    ))
-                    .highlights(Insights.DataHighlights.builder()
-                            .total(totalExceptions)
-                            .trend(totalExceptions > 0 ? "active" : "none")
-                            .build())
+                    .recommendations(recommendations)
+                    .trends(trends)
                     .build();
         }
     }
     
-    // Tenant Overview Insights
-    private static class TenantOverviewInsightStrategy implements InsightStrategy {
+    /**
+     * Tenant-specific insight strategy.
+     */
+    private class TenantInsightStrategy implements InsightStrategy {
         @Override
-        public Insights generateInsights(QueryResult result, ChartData chartData) {
-            List<Map<String, Object>> data = result.getResults();
-            List<Finding> findings = new ArrayList<>();
+        public Insights generateInsights(String query, QueryResult result) {
+            List<String> findings = new ArrayList<>();
+            List<String> recommendations = new ArrayList<>();
+            Map<String, Object> trends = new HashMap<>();
             
-            // Active vs Inactive tenants
-            long activeTenants = data.stream()
-                    .filter(row -> Boolean.TRUE.equals(row.get("is_active")))
-                    .count();
+            int activeTenants = 0;
+            int inactiveTenants = 0;
+            Map<String, Integer> tenantSizes = new HashMap<>();
             
-            findings.add(Finding.builder()
-                    .type("HIGHLIGHT")
-                    .message(String.format("%d of %d tenants are active", activeTenants, data.size()))
-                    .significance(0.8)
-                    .build());
-            
-            // Tenant with most colleagues
-            Map<String, Object> largestTenant = data.stream()
-                    .max(Comparator.comparing(row -> ((Number) row.get("colleague_count")).longValue()))
-                    .orElse(null);
-            
-            if (largestTenant != null) {
-                findings.add(Finding.builder()
-                        .type("HIGHLIGHT")
-                        .message(String.format("%s has the most colleagues", largestTenant.get("tenant_name")))
-                        .value(String.valueOf(largestTenant.get("colleague_count")))
-                        .significance(0.7)
-                        .build());
+            for (List<Object> row : result.getRows()) {
+                String tenantName = null;
+                int colleagueCount = 0;
+                
+                for (int i = 0; i < result.getColumns().size(); i++) {
+                    String column = result.getColumns().get(i).toLowerCase();
+                    
+                    if (column.contains("is_active") && row.get(i) != null) {
+                        boolean isActive = Boolean.parseBoolean(row.get(i).toString());
+                        if (isActive) activeTenants++;
+                        else inactiveTenants++;
+                    } else if (column.contains("tenant_name") && row.get(i) != null) {
+                        tenantName = row.get(i).toString();
+                    } else if (column.contains("colleague_count") && row.get(i) instanceof Number) {
+                        colleagueCount = ((Number) row.get(i)).intValue();
+                    }
+                }
+                
+                if (tenantName != null && colleagueCount > 0) {
+                    tenantSizes.put(tenantName, colleagueCount);
+                }
             }
             
-            // Tenants without shifts
-            long tenantsWithoutShifts = data.stream()
-                    .filter(row -> ((Number) row.get("shift_count")).longValue() == 0)
-                    .count();
+            findings.add(String.format("Active tenants: %d", activeTenants));
+            findings.add(String.format("Inactive tenants: %d", inactiveTenants));
+            trends.put("active_tenants", activeTenants);
+            trends.put("inactive_tenants", inactiveTenants);
             
-            if (tenantsWithoutShifts > 0) {
-                findings.add(Finding.builder()
-                        .type("WARNING")
-                        .message(String.format("%d tenants have no planned shifts", tenantsWithoutShifts))
-                        .significance(0.6)
-                        .build());
+            if (!tenantSizes.isEmpty()) {
+                String largestTenant = tenantSizes.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse("Unknown");
+                findings.add(String.format("Largest tenant: %s", largestTenant));
+                trends.put("largest_tenant", largestTenant);
             }
+            
+            if (inactiveTenants > 0) {
+                recommendations.add("Review and clean up inactive tenants");
+            }
+            
+            recommendations.add("Monitor tenant growth and activity");
+            recommendations.add("Ensure proper onboarding for new tenants");
             
             return Insights.builder()
-                    .summary(String.format("Overview of %d tenants in the system.", data.size()))
+                    .summary(String.format("Tenant overview: %d total tenants analyzed", 
+                            activeTenants + inactiveTenants))
                     .keyFindings(findings)
-                    .followUpSuggestions(List.of(
-                        "Show inactive tenant details",
-                        "Show shifts for specific tenant",
-                        "Show colleague distribution by tenant"
-                    ))
+                    .recommendations(recommendations)
+                    .trends(trends)
                     .build();
         }
     }
     
-    // Shift Pattern Insights
-    private static class ShiftPatternInsightStrategy implements InsightStrategy {
+    /**
+     * Shift-specific insight strategy.
+     */
+    private class ShiftInsightStrategy implements InsightStrategy {
         @Override
-        public Insights generateInsights(QueryResult result, ChartData chartData) {
-            List<Map<String, Object>> data = result.getResults();
-            List<Finding> findings = new ArrayList<>();
+        public Insights generateInsights(String query, QueryResult result) {
+            List<String> findings = new ArrayList<>();
+            List<String> recommendations = new ArrayList<>();
+            Map<String, Object> trends = new HashMap<>();
             
-            // Peak shift hour
-            Map<String, Object> peakHour = data.stream()
-                    .max(Comparator.comparing(row -> ((Number) row.get("shift_count")).longValue()))
-                    .orElse(null);
+            Map<Integer, Integer> shiftHours = new HashMap<>();
+            int totalShifts = 0;
             
-            if (peakHour != null) {
-                int hour = ((Number) peakHour.get("shift_hour")).intValue();
-                findings.add(Finding.builder()
-                        .type("HIGHLIGHT")
-                        .message(String.format("Most shifts start at %d:00", hour))
-                        .value(String.valueOf(peakHour.get("shift_count")))
-                        .significance(0.8)
-                        .build());
+            for (List<Object> row : result.getRows()) {
+                for (int i = 0; i < result.getColumns().size(); i++) {
+                    String column = result.getColumns().get(i).toLowerCase();
+                    
+                    if (column.contains("shift_hour") && row.get(i) instanceof Number) {
+                        int hour = ((Number) row.get(i)).intValue();
+                        shiftHours.merge(hour, 1, Integer::sum);
+                    } else if (column.contains("shift_count") && row.get(i) instanceof Number) {
+                        totalShifts += ((Number) row.get(i)).intValue();
+                    }
+                }
             }
             
-            // Total shifts analyzed
-            long totalShifts = data.stream()
-                    .mapToLong(row -> ((Number) row.get("shift_count")).longValue())
-                    .sum();
+            if (!shiftHours.isEmpty()) {
+                Integer peakHour = shiftHours.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse(0);
+                findings.add(String.format("Peak shift hour: %d:00", peakHour));
+                trends.put("peak_shift_hour", peakHour);
+            }
+            
+            findings.add(String.format("Total shifts analyzed: %d", totalShifts));
+            trends.put("total_shifts", totalShifts);
+            
+            recommendations.add("Ensure adequate coverage during peak hours");
+            recommendations.add("Review shift patterns for optimization opportunities");
             
             return Insights.builder()
-                    .summary(String.format("Analyzed %d shifts across different start times.", totalShifts))
+                    .summary(String.format("Shift pattern analysis: %d shift records", result.getRows().size()))
                     .keyFindings(findings)
-                    .followUpSuggestions(List.of(
-                        "Show shift coverage by day",
-                        "Show colleague shift assignments",
-                        "Show shift duration analysis"
-                    ))
+                    .recommendations(recommendations)
+                    .trends(trends)
                     .build();
         }
     }
     
-    // Exception Status Distribution Insights
-    private static class ExceptionStatusInsightStrategy implements InsightStrategy {
+    /**
+     * Location-specific insight strategy.
+     */
+    private class LocationInsightStrategy implements InsightStrategy {
         @Override
-        public Insights generateInsights(QueryResult result, ChartData chartData) {
-            List<Map<String, Object>> data = result.getResults();
-            List<Finding> findings = new ArrayList<>();
+        public Insights generateInsights(String query, QueryResult result) {
+            List<String> findings = new ArrayList<>();
+            List<String> recommendations = new ArrayList<>();
+            Map<String, Object> trends = new HashMap<>();
             
-            // Group by status
-            Map<String, Long> statusCounts = data.stream()
-                    .collect(Collectors.groupingBy(
-                        row -> (String) row.get("status"),
-                        Collectors.summingLong(row -> ((Number) row.get("count")).longValue())
-                    ));
+            Set<String> locations = new HashSet<>();
+            Map<String, Integer> locationActivity = new HashMap<>();
             
-            // Calculate percentages
-            long total = statusCounts.values().stream().mapToLong(Long::longValue).sum();
+            for (List<Object> row : result.getRows()) {
+                for (int i = 0; i < result.getColumns().size(); i++) {
+                    String column = result.getColumns().get(i).toLowerCase();
+                    
+                    if (column.contains("location_name") && row.get(i) != null) {
+                        String location = row.get(i).toString();
+                        locations.add(location);
+                        locationActivity.merge(location, 1, Integer::sum);
+                    }
+                }
+            }
             
-            statusCounts.forEach((status, count) -> {
-                double percentage = (count * 100.0) / total;
-                findings.add(Finding.builder()
-                        .type("HIGHLIGHT")
-                        .message(String.format("%s: %.1f%% of exceptions", status, percentage))
-                        .value(String.valueOf(count))
-                        .significance(0.6)
-                        .build());
-            });
+            findings.add(String.format("Total locations: %d", locations.size()));
+            trends.put("total_locations", locations.size());
+            
+            if (!locationActivity.isEmpty()) {
+                String busiestLocation = locationActivity.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse("Unknown");
+                findings.add(String.format("Most active location: %s", busiestLocation));
+                trends.put("busiest_location", busiestLocation);
+            }
+            
+            recommendations.add("Monitor location-specific metrics");
+            recommendations.add("Ensure consistent service across all locations");
             
             return Insights.builder()
-                    .summary(String.format("Exception status breakdown across %d tenants.", 
-                            data.stream().map(row -> row.get("tenant_name")).distinct().count()))
+                    .summary(String.format("Location analysis: %d locations found", locations.size()))
                     .keyFindings(findings)
-                    .followUpSuggestions(List.of(
-                        "Show open exceptions details",
-                        "Show exception resolution time",
-                        "Show exceptions by tenant"
-                    ))
+                    .recommendations(recommendations)
+                    .trends(trends)
                     .build();
         }
+    }
+    
+    // Helper methods
+    
+    private List<String> findNumericColumns(QueryResult result) {
+        List<String> numericColumns = new ArrayList<>();
+        
+        if (result.getRows().isEmpty()) return numericColumns;
+        
+        for (int i = 0; i < result.getColumns().size(); i++) {
+            boolean isNumeric = true;
+            for (List<Object> row : result.getRows()) {
+                if (row.size() > i && row.get(i) != null && !(row.get(i) instanceof Number)) {
+                    try {
+                        Double.parseDouble(row.get(i).toString());
+                    } catch (NumberFormatException e) {
+                        isNumeric = false;
+                        break;
+                    }
+                }
+            }
+            if (isNumeric) {
+                numericColumns.add(result.getColumns().get(i));
+            }
+        }
+        
+        return numericColumns;
+    }
+    
+    private List<Double> extractNumericValues(QueryResult result, String columnName) {
+        List<Double> values = new ArrayList<>();
+        int columnIndex = result.getColumns().indexOf(columnName);
+        
+        if (columnIndex >= 0) {
+            for (List<Object> row : result.getRows()) {
+                if (row.size() > columnIndex && row.get(columnIndex) != null) {
+                    try {
+                        if (row.get(columnIndex) instanceof Number) {
+                            values.add(((Number) row.get(columnIndex)).doubleValue());
+                        } else {
+                            values.add(Double.parseDouble(row.get(columnIndex).toString()));
+                        }
+                    } catch (NumberFormatException e) {
+                        // Skip non-numeric values
+                    }
+                }
+            }
+        }
+        
+        return values;
+    }
+    
+    private double calculateAverage(List<Double> values) {
+        if (values.isEmpty()) return 0.0;
+        return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+    
+    private double calculateStandardDeviation(List<Double> values) {
+        if (values.size() < 2) return 0.0;
+        
+        double mean = calculateAverage(values);
+        double variance = values.stream()
+                .mapToDouble(value -> Math.pow(value - mean, 2))
+                .average()
+                .orElse(0.0);
+        
+        return Math.sqrt(variance);
+    }
+    
+    /**
+     * Enhances basic insights with predictive analytics.
+     * 
+     * @param insights Basic insights
+     * @param predictions Predictive analytics data
+     * @return Enhanced insights
+     */
+    private Insights enhanceWithPredictions(Insights insights, Map<String, Object> predictions) {
+        if (predictions.isEmpty()) {
+            return insights;
+        }
+        
+        List<String> keyFindings = new ArrayList<>(insights.getKeyFindings());
+        List<String> recommendations = new ArrayList<>(insights.getRecommendations());
+        
+        // Add prediction-based findings
+        if (predictions.containsKey("trend")) {
+            String trend = predictions.get("trend").toString();
+            Object trendPercentage = predictions.get("trendPercentage");
+            keyFindings.add(String.format("Trend Analysis: Data is %s by %.1f%%", 
+                trend, Double.parseDouble(trendPercentage.toString())));
+        }
+        
+        if (predictions.containsKey("riskLevel")) {
+            String riskLevel = predictions.get("riskLevel").toString();
+            keyFindings.add(String.format("Risk Assessment: %s risk level detected", riskLevel));
+        }
+        
+        if (predictions.containsKey("predictedNextPeriod")) {
+            Object predicted = predictions.get("predictedNextPeriod");
+            keyFindings.add(String.format("Prediction: Next period expected value: %.2f", 
+                Double.parseDouble(predicted.toString())));
+        }
+        
+        // Add prediction-based recommendations
+        if (predictions.containsKey("recommendations")) {
+            @SuppressWarnings("unchecked")
+            List<String> predictionRecs = (List<String>) predictions.get("recommendations");
+            recommendations.addAll(predictionRecs);
+        }
+        
+        if (predictions.containsKey("atRiskCount")) {
+            int atRiskCount = Integer.parseInt(predictions.get("atRiskCount").toString());
+            if (atRiskCount > 0) {
+                recommendations.add(String.format("Action Required: %d items identified as at-risk", atRiskCount));
+            }
+        }
+        
+        // Add predictive data to additional data
+        Map<String, Object> additionalData = new HashMap<>();
+        if (insights.getAdditionalData() != null) {
+            additionalData.putAll(insights.getAdditionalData());
+        }
+        additionalData.put("predictiveAnalytics", predictions);
+        
+        return Insights.builder()
+                .summary(insights.getSummary() + " [Enhanced with predictive analytics]")
+                .keyFindings(keyFindings)
+                .recommendations(recommendations)
+                .trends(insights.getTrends())
+                .additionalData(additionalData)
+                .build();
     }
 }

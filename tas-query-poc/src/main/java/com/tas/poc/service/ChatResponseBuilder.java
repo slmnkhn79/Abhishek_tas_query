@@ -21,7 +21,7 @@ public class ChatResponseBuilder {
                                              QueryResult queryResult, ChartData chartData) {
         
         // Generate insights
-        Insights insights = insightGenerationService.generateInsights(userQuery, queryResult, chartData);
+        Insights insights = insightGenerationService.generateInsights(userQuery, queryResult);
         
         // Build conversational response
         String botResponse = buildConversationalResponse(queryResult, insights, chartData);
@@ -53,21 +53,18 @@ public class ChatResponseBuilder {
         
         if (result.getRowCount() == 0) {
             return "I didn't find any data matching your query. " +
-                   "Try one of these suggestions: " + String.join(", ", insights.getFollowUpSuggestions());
+                   "Try one of these suggestions: " + String.join(", ", 
+                       insights.getRecommendations() != null ? insights.getRecommendations() : List.of());
         }
         
         // Start with the summary
         response.append(insights.getSummary()).append("\n\n");
         
         // Add key findings
-        if (!insights.getKeyFindings().isEmpty()) {
+        if (insights.getKeyFindings() != null && !insights.getKeyFindings().isEmpty()) {
             response.append("📊 Key Findings:\n");
-            for (Finding finding : insights.getKeyFindings()) {
-                response.append("• ").append(finding.getMessage());
-                if (finding.getValue() != null) {
-                    response.append(" (").append(finding.getValue()).append(")");
-                }
-                response.append("\n");
+            for (String finding : insights.getKeyFindings()) {
+                response.append("• ").append(finding).append("\n");
             }
             response.append("\n");
         }
@@ -78,11 +75,11 @@ public class ChatResponseBuilder {
                    .append(" chart to visualize this data.\n\n");
         }
         
-        // Add follow-up suggestions
-        if (!insights.getFollowUpSuggestions().isEmpty()) {
-            response.append("💡 You might also want to:\n");
-            for (String suggestion : insights.getFollowUpSuggestions()) {
-                response.append("• ").append(suggestion).append("\n");
+        // Add recommendations
+        if (insights.getRecommendations() != null && !insights.getRecommendations().isEmpty()) {
+            response.append("💡 Recommendations:\n");
+            for (String recommendation : insights.getRecommendations()) {
+                response.append("• ").append(recommendation).append("\n");
             }
         }
         
@@ -111,9 +108,16 @@ public class ChatResponseBuilder {
     private List<String> generateFollowUpQuestions(Insights insights, String originalQuery) {
         List<String> questions = new ArrayList<>();
         
-        // Add insight-based suggestions
-        if (insights.getFollowUpSuggestions() != null) {
-            questions.addAll(insights.getFollowUpSuggestions());
+        // Add insight-based recommendations as follow-up questions
+        if (insights.getRecommendations() != null && !insights.getRecommendations().isEmpty()) {
+            // Convert recommendations to questions format
+            for (String rec : insights.getRecommendations()) {
+                if (rec.toLowerCase().contains("monitor") || rec.toLowerCase().contains("review")) {
+                    // Skip process recommendations
+                    continue;
+                }
+                questions.add(rec);
+            }
         }
         
         // Add contextual questions based on query type

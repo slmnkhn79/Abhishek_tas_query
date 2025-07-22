@@ -20,14 +20,18 @@ spring:
       ddl-auto: none
     show-sql: true
     
-  # AI configuration will be added in Phase 3
-  # ai:
-  #   ollama:
-  #     base-url: http://localhost:11434
-  #     chat:
-  #       options:
-  #         model: llama2
-  #         temperature: 0.1
+  # AI configuration for SQL generation with SQLCoder
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: sqlcoder:7b  # Best model for SQL generation
+        options:
+          temperature: 0.0  # Deterministic output for consistent SQL
+          top-k: 10
+          top-p: 0.9
+          num-predict: 500
+          num-threads: 8    # Adjust based on your CPU
           
   thymeleaf:
     cache: false
