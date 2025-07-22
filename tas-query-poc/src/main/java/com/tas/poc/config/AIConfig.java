@@ -1,7 +1,11 @@
 package com.tas.poc.config;
 
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,10 +15,6 @@ import lombok.extern.slf4j.Slf4j;
  * This configuration enables AI-powered SQL generation using embedded models
  * running locally through Ollama. The primary model used is SQLCoder, which
  * is specifically optimized for natural language to SQL conversion.
- * 
- * Spring AI auto-configures the OllamaChatModel based on application.yml settings.
- * No explicit bean definition is needed as Spring Boot's auto-configuration
- * handles it when the Ollama starter is on the classpath.
  * 
  * Features:
  * - Local model execution (no external API calls)
@@ -29,9 +29,36 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(prefix = "spring.ai.ollama", name = "base-url")
 public class AIConfig {
     
-    public AIConfig() {
-        log.info("AI Configuration: Ollama integration enabled");
-        log.info("Model will be configured from application.yml");
-        log.info("Using sqlcoder:7b for SQL generation");
+    @Value("${spring.ai.ollama.base-url:http://localhost:11434}")
+    private String baseUrl;
+    
+    @Value("${spring.ai.ollama.chat.model:sqlcoder:7b}")
+    private String model;
+    
+    @Bean
+    public OllamaApi ollamaApi() {
+        log.info("Configuring Ollama API with base URL: {}", baseUrl);
+        return new OllamaApi(baseUrl);
+    }
+    
+    @Bean
+    public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi) {
+        log.info("Configuring Ollama Chat Model with model: {}", model);
+        
+        OllamaOptions options = OllamaOptions.create()
+                .withModel(model)
+                .withTemperature(0.0f);
+        
+        OllamaChatModel chatModel = new OllamaChatModel(ollamaApi, options);
+        
+        // Test connection
+        try {
+            chatModel.call("Test connection");
+            log.info("✓ Ollama connection successful");
+        } catch (Exception e) {
+            log.warn("⚠ Ollama not available - will use pattern matching fallback: {}", e.getMessage());
+        }
+        
+        return chatModel;
     }
 }

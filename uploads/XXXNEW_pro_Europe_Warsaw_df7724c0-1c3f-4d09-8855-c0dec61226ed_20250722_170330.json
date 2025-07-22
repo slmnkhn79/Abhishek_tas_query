@@ -1,0 +1,70 @@
+{
+  "blocks": [
+    {
+      "startTime": "2025-06-29T17:00:00.000Z",
+      "endTime": "2025-06-29T22:00:00.000Z",
+      "actualEndTime": "2025-06-29T17:25:47.017Z",
+      "perModelStats": {
+        "claude-sonnet-4-20250514": {
+          "tokenCounts": {
+            "inputTokens": 11,
+            "outputTokens": 2,
+            "cacheCreationTokens": 23808,
+            "cacheReadTokens": 22181,
+            "totalTokens": 13
+          },
+          "costUSD": 0.095997,
+          "entriesCount": 2
+        }
+      },
+      "totalTokens": 13,
+      "totalTokensOld": 13,
+      "costUSD": 0.095997,
+      "entries": 4,
+      "limits": [
+        {
+          "type": "general_limit",
+          "timestamp": "2025-06-29T17:24:43.030Z",
+          "content": "Claude AI usage limit reached|1751227200",
+          "resetTime": "2025-06-29T20:00:00.000Z"
+        },
+        {
+          "type": "general_limit",
+          "timestamp": "2025-06-29T17:25:47.017Z",
+          "content": "Claude AI usage limit reached|1751227200",
+          "resetTime": "2025-06-29T20:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "startTime": "2025-06-30T03:00:00.000Z",
+      "endTime": "2025-06-30T08:00:00.000Z",
+      "actualEndTime": "2025-06-30T06:34:47.576Z",
+      "perModelStats": {
+        "claude-sonnet-4-20250514": {
+          "tokenCounts": {
+            "inputTokens": 4665,
+            "outputTokens": 18346,
+            "cacheCreationTokens": 966095,
+            "cacheReadTokens": 26556040,
+            "totalTokens": 23011
+          },
+          "costUSD": 11.878853,
+          "entriesCount": 338
+        }
+      },
+      "totalTokens": 23011,
+      "totalTokensOld": 23011,
+      "costUSD": 11.878853,
+      "entries": 342,
+      "limits": [
+        {
+          "type": "general_limit",
+          "timestamp": "2025-06-30T06:34:47.576Z",
+          "content": "Claude AI usage limit reached|1751270400",
+          "resetTime": "2025-06-30T08:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

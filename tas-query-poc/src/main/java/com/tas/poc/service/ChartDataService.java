@@ -182,8 +182,9 @@ public class ChartDataService {
         }
         
         // Build simple bar chart
+        final String labelColumn = potentialLabelColumn; // Make it effectively final
         List<String> labels = results.stream()
-                .map(row -> String.valueOf(row.get(potentialLabelColumn)))
+                .map(row -> String.valueOf(row.get(labelColumn)))
                 .collect(Collectors.toList());
         
         List<ChartData.Dataset> datasets = new ArrayList<>();

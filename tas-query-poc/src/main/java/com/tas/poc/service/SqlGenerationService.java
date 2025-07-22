@@ -3,11 +3,8 @@ package com.tas.poc.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -320,25 +317,17 @@ public class SqlGenerationService {
         String prompt = buildPromptWithContext(query, context);
         
         try {
-            // Create messages for the chat
-            List<Message> messages = new ArrayList<>();
-            
-            // System message to set the context
-            messages.add(new SystemMessage("""
+            // For Spring AI M1, use the model directly with the prompt
+            String fullPrompt = """
                 You are SQLCoder, an expert at converting natural language queries to SQL.
                 You must return ONLY valid PostgreSQL SQL queries without any explanation or markdown.
                 Always use the schema prefix 'tas_demo.' for all tables.
                 If you cannot generate a valid query, return NULL.
-                """));
+                
+                """ + prompt;
             
-            // User message with the actual query
-            messages.add(new UserMessage(prompt));
-            
-            // Call the AI model
-            Prompt aiPrompt = new Prompt(messages);
-            ChatResponse response = chatModel.call(aiPrompt);
-            
-            String generatedSql = response.getResults().get(0).getOutput().getText();
+            // Call the AI model directly
+            String generatedSql = chatModel.call(fullPrompt);
             
             // Clean up the response (remove markdown if present)
             generatedSql = cleanSqlResponse(generatedSql);
