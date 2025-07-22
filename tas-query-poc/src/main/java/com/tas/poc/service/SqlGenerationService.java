@@ -2,8 +2,8 @@ package com.tas.poc.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -50,12 +50,12 @@ public class SqlGenerationService {
     private final ConversationService conversationService;
     
     /**
-     * Optional ChatClient for AI-powered SQL generation.
+     * Optional OllamaChatModel for AI-powered SQL generation.
      * When available, uses SQLCoder model for natural language to SQL conversion.
      * Falls back to pattern matching if not available.
      */
     @Autowired(required = false)
-    private ChatClient chatClient;
+    private OllamaChatModel chatModel;
     
     /**
      * Static map of natural language patterns to SQL queries.
@@ -270,7 +270,7 @@ public class SqlGenerationService {
         log.debug("Conversation context: {}", context);
         
         // Try AI-powered generation first if available
-        if (chatClient != null) {
+        if (chatModel != null) {
             try {
                 String aiGeneratedSql = generateSqlWithAI(naturalLanguageQuery, context);
                 if (aiGeneratedSql != null && isValidSql(aiGeneratedSql)) {
@@ -336,7 +336,7 @@ public class SqlGenerationService {
             
             // Call the AI model
             Prompt aiPrompt = new Prompt(messages);
-            ChatResponse response = chatClient.call(aiPrompt);
+            ChatResponse response = chatModel.call(aiPrompt);
             
             String generatedSql = response.getResult().getOutput().getContent();
             
